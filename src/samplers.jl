@@ -1,9 +1,16 @@
-#Gumbel argmax trick for GPU sampling
-function samplelogits(logits::AbstractVector)
-    u = similar(logits)
-    rand!(u)
-    return argmax(-log.(-log.(u)) .+ logits)
+using Random
+
+"""
+    logitsample([rng], logits) -> Int
+
+Sample an index from a logit distribution using the Gumbel argmax trick.
+"""
+function logitsample(rng::AbstractRNG, x::AbstractVector{<:Real})
+    u = rand!(rng, similar(x))
+    return argmax(-log.(-log.(u)) .+ x)
 end
+
+logitsample(x::AbstractVector{<:Real}) = logitsample(Random.default_rng(), x)
 
 #To do: refactor into a combination of modified_softmax and sample. This way we can viz the result of the modified logits without having to sample.
 #This won't be visible to the user. Any method that doesn't fit this interface can be implemented directly.

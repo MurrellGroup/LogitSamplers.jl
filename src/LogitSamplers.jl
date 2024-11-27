@@ -1,9 +1,16 @@
 module LogitSamplers
 
-using NNlib, StatsBase
+using NNlib
+using Random
+using Statistics
 
-include("samplers.jl")
+include("mask.jl")
 
-export argmax_sampler, top_pk_sampler, min_p_sampler, top_nσ_sampler
+include("sample.jl")
+export logitsample
+
+include("transforms.jl")
+export LogitTransform
+export Top_p, Min_p, Top_nσ
 
 end

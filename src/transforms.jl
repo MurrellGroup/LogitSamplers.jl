@@ -1,5 +1,7 @@
 abstract type LogitTransform <: Function end
 
+Base.show(io::IO, ::MIME"text/plain", t::LogitTransform) = show(io, t)
+
 
 """
     Top_p(p, k)
@@ -8,7 +10,7 @@ Returns a function that samples from the most probable tokens.
 A combination of the top-p and top-k sampling methods, where you can sample from
 the top tokens with cumulative probability `p`, with a max number of tokens `k`.
 """
-struct Top_p{T} <: LogitTransform
+mutable struct Top_p{T} <: LogitTransform
     p::T
     k::Int
 end
@@ -32,7 +34,7 @@ Returns a function that samples from the most probable tokens using the min-p st
 
 See: https://arxiv.org/pdf/2407.01082
 """
-struct Min_p{T} <: LogitTransform
+mutable struct Min_p{T} <: LogitTransform
     pbase::T
 end
 
@@ -50,7 +52,7 @@ Returns a function that samples from the most probable tokens using the top-nσ 
 
 See: https://arxiv.org/pdf/2411.07641
 """
-struct Top_nσ{T} <: LogitTransform
+mutable struct Top_nσ{T} <: LogitTransform
     T::T
     n::T
 end

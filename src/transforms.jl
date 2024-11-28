@@ -18,7 +18,7 @@ end
 """
     Top_pk(p, k)
 
-A logit transform that masks logits to only include tokens in the top `k` or the top `p` cumulative probability.
+A logit transform that masks out logits outside the top `p` cumulative probability *or* top `k` logits.
 """
 mutable struct Top_pk{P<:Real,K<:Union{Integer,Nothing}} <: LogitTransform
     p::P
@@ -41,7 +41,7 @@ Top_k(k) = Top_pk(1, k)
 """
     Min_p(pbase)
 
-A logit transform that samples from the most probable tokens using the min-p strategy.
+A logit transform that masks out logits below `pbase` times the maximum probability.
 
 See: https://arxiv.org/pdf/2407.01082
 """
@@ -58,7 +58,7 @@ end
 """
     Top_nσ(n)
 
-A logit transform that samples within `n` standard deviations of the maximum logit.
+A logit transform that masks out logits below `n` standard deviations of the maximum logit.
 
 Top-nσ is temperature-invariant, i.e. the candidate set does not change with temperature.
 

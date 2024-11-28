@@ -1,8 +1,8 @@
 module LogitSamplers
 
-using NNlib
+using NNlib: softmax
 using Random
-using Statistics
+using Statistics: std
 
 include("mask.jl")
 
@@ -11,6 +11,12 @@ export logitsample
 
 include("transforms.jl")
 export LogitTransform
-export Top_p, Min_p, Top_nσ
+export Temperature
+export Top_pk, Top_p, Top_k
+export Min_p
+export Top_nσ
+
+include("deprecated.jl")
+export argmax_sampler, top_pk_sampler, min_p_sampler, top_nσ_sampler
 
 end

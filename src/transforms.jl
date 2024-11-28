@@ -4,62 +4,71 @@ Base.show(io::IO, ::MIME"text/plain", t::LogitTransform) = show(io, t)
 
 
 """
-    Top_p(p, k)
+    Temperature(T)
 
-Returns a function that samples from the most probable tokens.
-A combination of the top-p and top-k sampling methods, where you can sample from
-the top tokens with cumulative probability `p`, with a max number of tokens `k`.
+A logit transform that scales (divides) the logits by a temperature parameter.
 """
-mutable struct Top_p{T} <: LogitTransform
-    p::T
-    k::Int
+mutable struct Temperature{T<:Real} <: LogitTransform
+    T::T
 end
 
-function (t::Top_p)(logits::AbstractVector{T}) where T
-    logits′ = convert(Vector, logits)
-    top_k_indices = partialsortperm(logits′, 1:min(t.k, length(logits′)), rev=true)
-    top_k_logits = logits′[top_k_indices]
-    top_k_probs = NNlib.softmax(top_k_logits)
-    last_index = findfirst(>(T(t.p)), cumsum(top_k_probs))
-    top_p_indices = isnothing(last_index) ? top_k_indices : top_k_indices[1:last_index]
-    mask = create_mask(logits, top_p_indices)
-    return apply_mask(logits, mask)
+(t::Temperature)(logits::AbstractVector{T}) where T = logits / T(t.T)
+
+
+"""
+    Top_pk(p, k)
+
+A logit transform that masks logits to only include tokens in the top `k` or the top `p` cumulative probability.
+"""
+mutable struct Top_pk{P<:Real,K<:Union{Integer,Nothing}} <: LogitTransform
+    p::P
+    k::K
 end
+
+function (t::Top_pk)(logits::AbstractVector{T}) where T<:AbstractFloat
+    0 < t.p <= 1 || throw(DomainError(t.p, "p must be in the interval (0, 1]"))
+    probs = softmax(logits)
+    sorted_probs = sort(probs, rev=true)
+    cutoff_p = maximum(sorted_probs[cumsum(sorted_probs) .>= t.p]; init=zero(T))
+    cutoff_k = t.k isa Integer ? maximum(sorted_probs[t.k:t.k]) : zero(T)
+    return apply_mask(logits, probs .>= max(cutoff_p, cutoff_k))
+end
+
+Top_p(p) = Top_pk(p, nothing)
+Top_k(k) = Top_pk(1, k)
 
 
 """
     Min_p(pbase)
 
-Returns a function that samples from the most probable tokens using the min-p strategy.
+A logit transform that samples from the most probable tokens using the min-p strategy.
 
 See: https://arxiv.org/pdf/2407.01082
 """
-mutable struct Min_p{T} <: LogitTransform
+mutable struct Min_p{T<:Real} <: LogitTransform
     pbase::T
 end
 
-function (t::Min_p)(logits::AbstractVector{T}) where T
-    p = NNlib.softmax(logits)
-    mask = p .>= T(t.pbase) * maximum(p)
-    return apply_mask(logits, mask)
+function (t::Min_p)(logits::AbstractVector)
+    p = softmax(logits)
+    return apply_mask(logits, p .>= t.pbase * maximum(p))
 end
 
 
 """
-    Top_nσ(T, n)
+    Top_nσ(n)
 
-Returns a function that samples from the most probable tokens using the top-nσ strategy.
+A logit transform that samples within `n` standard deviations of the maximum logit.
+
+Top-nσ is temperature-invariant, i.e. the candidate set does not change with temperature.
 
 See: https://arxiv.org/pdf/2411.07641
 """
-mutable struct Top_nσ{T} <: LogitTransform
-    T::T
+mutable struct Top_nσ{T<:Real} <: LogitTransform
     n::T
 end
 
-function (t::Top_nσ)(logits::AbstractVector{T}) where T
-    logits′ = logits / T(t.T)
-    M, σ = maximum(logits′), std(logits′)
-    mask = logits′ .>= M - T(t.n) * σ
-    return apply_mask(logits, mask)
+function (t::Top_nσ)(logits::AbstractVector)
+    M, σ = maximum(logits), std(logits)
+    return apply_mask(logits, logits .>= M - t.n * σ)
 end

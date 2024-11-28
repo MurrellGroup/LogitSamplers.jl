@@ -58,7 +58,8 @@ using Random
         @testset "Temperature" begin
             @test Temperature(1.0) isa Temperature
 
-            @test repr(Temperature(1.0)) == "Temperature{Float64}(1.0)"
+            t = Temperature(1.0)
+            @test repr(MIME("text/plain"), t) == repr(t)
 
             logits = log.([0.1, 0.2, 0.3, 0.4])
 

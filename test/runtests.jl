@@ -140,4 +140,17 @@ using Random
 
     end
 
+    @testset "deprecated.jl" begin
+        logits = log.([0.1, 0.2, 0.3, 0.4])
+        @test argmax_sampler(logits) isa Integer
+        @test_throws BoundsError top_pk_sampler(logits) # k defaults to 5
+        @test top_pk_sampler(logits; k = 3) isa Integer
+        @test min_p_sampler(logits) isa Integer
+        @test top_nσ_sampler(logits) isa Integer
+        @test argmax_sampler() isa Function
+        @test top_pk_sampler() isa Function
+        @test min_p_sampler() isa Function
+        @test top_nσ_sampler() isa Function
+    end
+
 end

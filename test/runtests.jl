@@ -58,6 +58,8 @@ using Random
         @testset "Temperature" begin
             @test Temperature(1.0) isa Temperature
 
+            @test repr(Temperature(1.0)) == "Temperature{Float64}(1.0)"
+
             logits = log.([0.1, 0.2, 0.3, 0.4])
 
             @test count_remaining(Temperature(0.5)(logits)) == 4

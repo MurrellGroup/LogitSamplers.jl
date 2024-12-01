@@ -31,7 +31,7 @@ sampler = logits -> logitsample(top_p(temperature(logits)))
 
 logits = randn(100)
 
-# Get token probabilities from the sampler
+# Get token probabilities with the transformed logits
 probs = softmax(transform(logits))
 
 # Sample a logit index from the sampler

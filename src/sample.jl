@@ -1,15 +1,16 @@
+_index_fix(i, ::Colon) = i
+_index_fix(i, dims::Int) = CartesianIndex(i)[dims]
+_index_fix(i::CartesianIndex, dims::Tuple{Vararg{Int}}) = CartesianIndex(getindex.(i, dims)...)
+
 """
-    logitsample([rng], logits, [buffer=similar(logits)]) -> Int
+    logitsample([rng], logits)
 
 Sample an index from a logit distribution using the Gumbel argmax trick.
-
-Alternatively pass a buffer to avoid allocating a new array when creating
-the random numbers.
 """
-function logitsample(rng::AbstractRNG, x::AbstractVector{T}, u::AbstractVector{T}=similar(x)) where T<:AbstractFloat
-    length(x) == length(u) || throw(DimensionMismatch("Expected buffer of same length as logits"))
-    rand!(rng, u)
-    argmax(-log.(-log.(u)) + x)
+function logitsample(rng::AbstractRNG, x::AbstractArray; dims=:)
+    u = rand!(rng, similar(x))
+    indices = argmax(.-log.(.-log.(u)) .+ x; dims)
+    return _index_fix.(indices, Ref(dims))
 end
 
-@inline logitsample(args...) = logitsample(Random.default_rng(), args...)
+logitsample(x; kws...) = logitsample(Random.default_rng(), x; kws...)

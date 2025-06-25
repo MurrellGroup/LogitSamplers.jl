@@ -7,10 +7,9 @@ _index_fix(i::CartesianIndex, dims::Tuple{Vararg{Int}}) = CartesianIndex(getinde
 
 Sample an index from a logit distribution using the Gumbel argmax trick.
 """
-function logitsample(rng::AbstractRNG, x::AbstractArray; dims=:)
-    u = rand!(rng, similar(x))
-    indices = argmax(.-log.(.-log.(u)) .+ x; dims)
+function logitsample(rng::AbstractRNG, x::AbstractArray, u=similar(x); dims=:)
+    indices = argmax(.-log.(.-log.(rand!(rng, u))) .+ x; dims)
     return _index_fix.(indices, Ref(dims))
 end
 
-logitsample(x; kws...) = logitsample(Random.default_rng(), x; kws...)
+logitsample(xs::AbstractArray...; kws...) = logitsample(Random.default_rng(), xs...; kws...)

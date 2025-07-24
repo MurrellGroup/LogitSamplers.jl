@@ -13,6 +13,10 @@ using Random
             @test logitsample(logits) isa Integer
             @test logitsample(logits, buffer) isa Integer
             @test logitsample(Random.MersenneTwister(123), logits) == logitsample(Random.MersenneTwister(123), logits, buffer)
+
+            @test logitsample([logits logits]) isa CartesianIndex{2}
+            @test logitsample([logits logits], dims=1) isa Matrix{Int}
+            @test logitsample([logits logits], dims=(1,2)) isa Matrix{CartesianIndex{2}}
         end
 
         @testset "Statistical properties" begin
@@ -100,6 +104,10 @@ using Random
 
                 @test_throws BoundsError Top_k(5)(logits)
                 @test_throws BoundsError Top_k(0)(logits)
+            end
+
+            @testset "batched" begin
+                @test all(==(3) ∘ count_remaining, eachcol(Top_pk(0.80, 3)([logits logits .+ 10])))
             end
         end
 

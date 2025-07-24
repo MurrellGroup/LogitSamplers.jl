@@ -1,6 +1,7 @@
 _index_fix(i, ::Colon) = i
-_index_fix(i, dims::Int) = CartesianIndex(i)[dims]
+_index_fix(i::Union{Int,CartesianIndex}, dims::Int) = CartesianIndex(i)[dims]
 _index_fix(i::CartesianIndex, dims::Tuple{Vararg{Int}}) = CartesianIndex(getindex.((i,), dims)...)
+_index_fix(i::AbstractArray, dims) = _index_fix.(i, (dims,))
 
 """
     logitsample([rng], logits; dims=:)
@@ -23,7 +24,7 @@ julia> logitsample([-Inf -10.0; 20 -Inf], dims=1)
 """
 function logitsample(rng::AbstractRNG, x::AbstractArray, u=similar(x); dims=:)
     indices = argmax(.-log.(.-log.(rand!(rng, u))) .+ x; dims)
-    return _index_fix.(indices, Ref(dims))
+    return _index_fix(indices, dims)
 end
 
 logitsample(xs::AbstractArray...; kws...) = logitsample(Random.default_rng(), xs...; kws...)

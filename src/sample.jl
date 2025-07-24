@@ -1,6 +1,6 @@
 _index_fix(i, ::Colon) = i
 _index_fix(i, dims::Int) = CartesianIndex(i)[dims]
-_index_fix(i::CartesianIndex, dims::Tuple{Vararg{Int}}) = CartesianIndex(getindex.(i, dims)...)
+_index_fix(i::CartesianIndex, dims::Tuple{Vararg{Int}}) = CartesianIndex(getindex.((i,), dims)...)
 
 """
     logitsample([rng], logits; dims=:)

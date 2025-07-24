@@ -1,7 +1,7 @@
 name = "LogitSamplers"
 uuid = "1b30fcfc-0ee9-4be2-9cfe-b2289b43e041"
 authors = ["Ben Murrell <murrellb@gmail.com>", "Anton Oresten <antonoresten@gmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
@@ -13,9 +13,3 @@ NNlib = "0.9"
 Random = "1"
 Statistics = "1"
 julia = "1.9"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]

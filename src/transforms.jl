@@ -12,7 +12,7 @@ mutable struct Temperature{T<:Real} <: LogitTransform
     T::T
 end
 
-(t::Temperature)(logits::AbstractVector{T}) where T = logits / T(t.T)
+(t::Temperature)(logits::AbstractVector{T}) where T = logits ./ T(t.T)
 
 
 """
@@ -25,13 +25,16 @@ mutable struct Top_pk{P<:Real,K<:Union{Integer,Nothing}} <: LogitTransform
     k::K
 end
 
-function (t::Top_pk)(logits::AbstractVector{T}) where T<:AbstractFloat
+_sort(x::AbstractVector; dims, kwargs...) = sort(x; kwargs...)
+_sort(x::AbstractArray; kwargs...) = sort(x; kwargs...)
+function (t::Top_pk)(logits::AbstractArray{T}) where T<:AbstractFloat
     0 < t.p <= 1 || throw(DomainError(t.p, "p must be in the interval (0, 1]"))
-    probs = softmax(logits)
-    sorted_probs = sort(probs, rev=true)
-    cutoff_p = maximum(sorted_probs[cumsum(sorted_probs) .>= t.p]; init=zero(T))
-    cutoff_k = t.k isa Integer ? maximum(sorted_probs[t.k:t.k]) : zero(T)
-    return apply_mask(logits, probs .>= max(cutoff_p, cutoff_k))
+    probs = softmax(logits, dims=1)
+    sorted_probs = _sort(probs, dims=1, rev=true)
+    cutoff_k = t.k isa Integer ? copy(selectdim(sorted_probs, 1, t.k:t.k)) : zero(T)
+    sorted_probs[cumsum(sorted_probs, dims=1) .< t.p] .= 0
+    cutoff_p = maximum(sorted_probs, dims=1, init=zero(T))
+    return ifelse.(probs .>= max.(cutoff_p, cutoff_k), logits, T(-Inf))
 end
 
 Top_p(p) = Top_pk(p, nothing)
@@ -49,9 +52,9 @@ mutable struct Min_p{T<:Real} <: LogitTransform
     pbase::T
 end
 
-function (t::Min_p)(logits::AbstractVector)
-    p = softmax(logits)
-    return apply_mask(logits, p .>= t.pbase * maximum(p))
+function (t::Min_p)(logits::AbstractArray{T}) where T<:AbstractFloat
+    logp = logsoftmax(logits, dims=1)
+    return ifelse.(logp .>= log(t.pbase) .+ maximum(logp, dims=1), logits, T(-Inf))
 end
 
 
@@ -68,7 +71,7 @@ mutable struct Top_nσ{T<:Real} <: LogitTransform
     n::T
 end
 
-function (t::Top_nσ)(logits::AbstractVector)
-    M, σ = maximum(logits), std(logits)
-    return apply_mask(logits, logits .>= M - t.n * σ)
+function (t::Top_nσ)(logits::AbstractArray{T}) where T<:AbstractFloat
+    M, σ = maximum(logits, dims=1), std(logits, dims=1)
+    return ifelse.(logits .>= M .- t.n .* σ, logits, T(-Inf))
 end

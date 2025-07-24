@@ -1,10 +1,8 @@
 module LogitSamplers
 
-using NNlib: softmax
+using NNlib: softmax, logsoftmax
 using Random
 using Statistics: std
-
-include("mask.jl")
 
 include("sample.jl")
 export logitsample

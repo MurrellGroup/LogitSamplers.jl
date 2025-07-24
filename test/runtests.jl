@@ -4,18 +4,6 @@ using Random
 
 @testset "LogitSamplers.jl" begin
 
-    @testset "mask.jl" begin
-        n = 6
-        logits = randn(n)
-        indices = [2, 4, 5]
-        mask = LogitSamplers.create_mask(logits, indices)
-        @test mask == Bool[0, 1, 0, 1, 1, 0]
-        @test all(mask[indices])
-        @test !any(mask[setdiff(1:n, indices)])
-        @test LogitSamplers.apply_mask(logits, mask)[mask] == logits[mask]
-        @test all(isinf, LogitSamplers.apply_mask(logits, mask)[.!mask])
-    end
-
     @testset "sample.jl" begin
 
         @testset "Basic operations" begin

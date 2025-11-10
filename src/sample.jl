@@ -22,9 +22,19 @@ julia> logitsample([-Inf -10.0; 20 -Inf], dims=1)
  2  1
 ```
 """
-function logitsample(rng::AbstractRNG, x::AbstractArray, u=similar(x); dims=:)
+Base.@constprop :aggressive function logitsample(
+    rng::AbstractRNG, x::AbstractArray, u=similar(x);
+    dims=:, style=:slice
+)
     indices = argmax(.-log.(.-log.(rand!(rng, u))) .+ x; dims)
-    return _index_fix(indices, dims)
+    if style == :slice
+        return _index_fix(indices, dims)
+    elseif style == :global
+        return indices
+    else
+        throw(ArgumentError("Invalid style $style"))
+    end
+    
 end
 
 logitsample(xs::AbstractArray...; kws...) = logitsample(Random.default_rng(), xs...; kws...)

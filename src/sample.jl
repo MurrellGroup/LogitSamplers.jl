@@ -12,7 +12,7 @@ julia> logitsample([-Inf, -10.0])
 2
 
 julia> logits = [-Inf -10
-                   30  10]
+                   30  10];
 
 julia> logitsample(logits)
 CartesianIndex(2, 1)
@@ -55,7 +55,7 @@ julia> logitsample_categorical([-Inf, -10.0])
  2
 
 julia> logits = [-Inf -10
-                   30  10]
+                   30  10];
 
 julia> logitsample_categorical(logits) # dims=1 by default
 1×2 Matrix{Int64}:

@@ -12,7 +12,27 @@ mutable struct Temperature{T<:Real} <: LogitTransform
     T::T
 end
 
-(t::Temperature)(logits::AbstractVector{T}) where T = logits ./ T(t.T)
+(t::Temperature)(logits::AbstractArray{T}) where T = logits ./ T(t.T)
+
+
+"""
+    GumbelNoise(; scaling=true, rng=Random.default_rng())
+
+A logit transform that adds Gumbel noise to the logits.
+
+Taking the argmax of the result is equivalent to sampling from the logit distribution.
+"""
+@kwdef mutable struct GumbelNoise{T<:Real,R<:AbstractRNG} <: LogitTransform
+    scaling::T = true
+    rng::R = Random.default_rng()
+end
+
+rand_like(rng::AbstractRNG, x::AbstractArray{T}) where T = rand!(rng, similar(x, float(T)))
+
+function (t::GumbelNoise)(logits::AbstractArray{T}) where T
+    u = rand_like(t.rng, logits)
+    return u .= .-log.(.-log.(u)) .* float(T)(t.scaling) .+ logits
+end
 
 
 """
@@ -54,7 +74,7 @@ end
 
 function (t::Min_p)(logits::AbstractArray{T}) where T<:AbstractFloat
     logp = logsoftmax(logits, dims=1)
-    return ifelse.(logp .>= log(t.pbase) .+ maximum(logp, dims=1), logits, T(-Inf))
+    return logp .= ifelse.(logp .>= log(t.pbase) .+ maximum(logp, dims=1), logits, T(-Inf))
 end
 
 

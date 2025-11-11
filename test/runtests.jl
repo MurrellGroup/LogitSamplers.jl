@@ -8,15 +8,18 @@ using Random
 
         @testset "Basic operations" begin
             logits = randn(10)
-            buffer = similar(logits)
+            create_rng(seed=123) = Random.MersenneTwister(seed)
 
             @test logitsample(logits) isa Integer
-            @test logitsample(logits, buffer) isa Integer
-            @test logitsample(Random.MersenneTwister(123), logits) == logitsample(Random.MersenneTwister(123), logits, buffer)
+            @test logitsample(create_rng(), logits) == only(logitsample_categorical(create_rng(), logits))
+            @test logitsample(create_rng(), logits) == logitsample(create_rng(), logits)
 
-            @test logitsample([logits logits]) isa CartesianIndex{2}
-            @test logitsample([logits logits], dims=1) isa Matrix{Int}
-            @test logitsample([logits logits], dims=(1,2)) isa Matrix{CartesianIndex{2}}
+            logits2 = [logits logits]
+            @test logitsample(logits2) isa CartesianIndex{2}
+            @test logitsample(logits2, dims=1) isa Matrix{CartesianIndex{2}}
+            @test logitsample_categorical(create_rng(), logits2) != logitsample(create_rng(), logits2)
+            @test logitsample_categorical(create_rng(), logits2) == logitsample_categorical(create_rng(), logits2, dims=1)
+            @test logitsample_categorical(logits2, dims=1) isa Matrix{Int}
         end
 
         @testset "Statistical properties" begin
@@ -24,7 +27,7 @@ using Random
             logits = log.([0.25, 0.75])
             counts = zeros(Int, 2)
             for _ in 1:n_samples
-                idx = logitsample(logits)
+                idx = only(logitsample_categorical(logits))
                 counts[idx] += 1
             end
             
@@ -135,19 +138,6 @@ using Random
             @test count_remaining(Top_nσ(3.0)(logits)) == 4
         end
 
-    end
-
-    @testset "deprecated.jl" begin
-        logits = log.([0.1, 0.2, 0.3, 0.4])
-        @test argmax_sampler(logits) isa Integer
-        @test_throws BoundsError top_pk_sampler(logits) # k defaults to 5
-        @test top_pk_sampler(logits; k = 3) isa Integer
-        @test min_p_sampler(logits) isa Integer
-        @test top_nσ_sampler(logits) isa Integer
-        @test argmax_sampler() isa Function
-        @test top_pk_sampler() isa Function
-        @test min_p_sampler() isa Function
-        @test top_nσ_sampler() isa Function
     end
 
 end
